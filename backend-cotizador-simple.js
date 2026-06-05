@@ -1,13 +1,13 @@
 const express = require('express');
 const cors = require('cors');
-const { PDFDocument, rgb } = require('pdfkit');
+const { PDFDocument } = require('pdfkit');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SPREADSHEET_ID = '1tdkPp_e76PRCJU2R8BGSkndUU6CjKzP8eui5yi72ywk';
-const GOOGLE_API_KEY = 'AIzaSyDyWY3oy5pZq1XyXzpz0K0xZ0xZ0xZ0xZ0'; // Necesitarás tu propia key
+const GOOGLE_API_KEY = 'AIzaSyDyWY3oy5pZq1XyXzpz0K0xZ0xZ0xZ0xZ0';
 
 app.use(express.json());
 app.use(cors());
@@ -51,10 +51,9 @@ async function getInventario() {
   for (const modelo of modelos) {
     const datos = await getSheetData(modelo);
     if (datos.length > 0) {
-      const precio = datos[0][1]; // Primera fila tiene el precio
+      const precio = datos[0][1];
       const colores = {};
       
-      // Leer colores desde la fila 3 en adelante (fila 1=precio, fila 2=headers)
       for (let i = 2; i < datos.length; i++) {
         if (datos[i][0] && datos[i][1]) {
           colores[datos[i][0]] = parseInt(datos[i][1]) || 0;
@@ -71,7 +70,523 @@ async function getInventario() {
   return inventario;
 }
 
-// API: Obtener inventario actual
+// HTML COTIZADOR
+const htmlCotizador = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cotiza tu HISUN 2026</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 50px;
+      color: white;
+    }
+    
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    
+    .header p {
+      font-size: 1.1em;
+      color: #aaa;
+    }
+    
+    .form-section {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    
+    .section-title {
+      font-size: 1.5em;
+      font-weight: 600;
+      margin-bottom: 25px;
+      color: #1a1a1a;
+      border-bottom: 3px solid #ff6b35;
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 1em;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: #ff6b35;
+    }
+    
+    .modelos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    
+    .modelo-card {
+      cursor: pointer;
+      border: 3px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      background: #f9f9f9;
+      transition: all 0.3s;
+    }
+    
+    .modelo-card:hover {
+      border-color: #ff6b35;
+      box-shadow: 0 5px 20px rgba(255,107,53,0.2);
+    }
+    
+    .modelo-card input {
+      display: none;
+    }
+    
+    .modelo-card.selected {
+      border-color: #ff6b35;
+      background: rgba(255,107,53,0.05);
+      color: #ff6b35;
+      font-weight: 700;
+    }
+    
+    .modelo-nombre {
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    
+    .modelo-precio {
+      color: #ff6b35;
+      font-size: 1.2em;
+      font-weight: 700;
+    }
+    
+    .colores-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 12px;
+    }
+    
+    .color-option {
+      position: relative;
+      cursor: pointer;
+    }
+    
+    .color-option input {
+      display: none;
+    }
+    
+    .color-swatch {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      border: 3px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.75em;
+      color: white;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      transition: all 0.3s;
+      text-align: center;
+      padding: 5px;
+    }
+    
+    .color-option input:checked ~ .color-swatch {
+      border-color: #333;
+      box-shadow: 0 0 0 3px rgba(255,107,53,0.3);
+    }
+    
+    .color-option.sin-stock .color-swatch {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .stock-info {
+      font-size: 0.65em;
+      margin-top: 5px;
+      color: #666;
+    }
+    
+    .sin-stock-label {
+      color: red;
+      font-weight: 700;
+      font-size: 0.7em;
+    }
+    
+    .resumen {
+      background: #f5f5f5;
+      padding: 25px;
+      border-radius: 10px;
+      margin: 30px 0;
+      border-left: 5px solid #ff6b35;
+    }
+    
+    .resumen-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    
+    .resumen-total {
+      border-top: 2px solid #ddd;
+      padding-top: 15px;
+      margin-top: 15px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.3em;
+      font-weight: 700;
+      color: #ff6b35;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+    
+    button {
+      padding: 14px 40px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+    
+    .btn-cotizar {
+      background: linear-gradient(135deg, #ff6b35 0%, #ff5520 100%);
+      color: white;
+      flex: 1;
+      max-width: 300px;
+    }
+    
+    .btn-cotizar:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(255,107,53,0.4);
+    }
+    
+    .btn-cotizar:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-limpiar {
+      background: #e0e0e0;
+      color: #333;
+      flex: 1;
+      max-width: 300px;
+    }
+    
+    .success-message {
+      background: #2ed573;
+      color: white;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+      text-align: center;
+      display: none;
+    }
+    
+    .success-message.show {
+      display: block;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: white;
+    }
+    
+    @media (max-width: 768px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+      .header h1 {
+        font-size: 1.8em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🚙 Cotiza tu HISUN 2026</h1>
+      <p>Completa el formulario y recibirás tu propuesta al instante</p>
+    </div>
+
+    <div id="loadingMessage" class="loading">
+      Cargando modelos disponibles...
+    </div>
+
+    <form id="cotizadorForm" style="display: none;">
+      <div class="form-section">
+        <h2 class="section-title">Tus Datos</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre *</label>
+            <input type="text" id="nombre" required>
+          </div>
+          <div class="form-group">
+            <label>Apellido *</label>
+            <input type="text" id="apellido" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email *</label>
+            <input type="email" id="email" required>
+          </div>
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input type="tel" id="telefono" placeholder="+507 XXXX-XXXX">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2 class="section-title">Elige tu Modelo</h2>
+        <div class="modelos-grid" id="modelosGrid"></div>
+      </div>
+
+      <div class="form-section">
+        <h2 class="section-title">Selecciona el Color</h2>
+        <div class="colores-grid" id="coloresGrid"></div>
+      </div>
+
+      <div class="form-section">
+        <div class="resumen">
+          <h3>Resumen de tu Cotización</h3>
+          <div class="resumen-item">
+            <label>Modelo:</label>
+            <span id="resumen-modelo">-</span>
+          </div>
+          <div class="resumen-item">
+            <label>Color:</label>
+            <span id="resumen-color">-</span>
+          </div>
+          <div class="resumen-item">
+            <label>Precio Base:</label>
+            <span id="resumen-precio">$0.00</span>
+          </div>
+          <div class="resumen-total">
+            <span>Total:</span>
+            <span id="resumen-total">$0.00</span>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="reset" class="btn-limpiar">Limpiar</button>
+          <button type="submit" class="btn-cotizar" id="btnCotizar">Generar Propuesta</button>
+        </div>
+
+        <div class="success-message" id="successMessage">
+          ✓ Propuesta enviada. Revisa tu correo.
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    let inventario = {};
+    const API_URL = window.location.origin;
+
+    async function cargarInventario() {
+      try {
+        const response = await fetch(\`\${API_URL}/api/inventario\`);
+        inventario = await response.json();
+        mostrarModelos();
+        document.getElementById('loadingMessage').style.display = 'none';
+        document.getElementById('cotizadorForm').style.display = 'block';
+      } catch (error) {
+        console.error('Error cargando inventario:', error);
+        document.getElementById('loadingMessage').innerHTML = 'Error cargando datos. Intenta más tarde.';
+      }
+    }
+
+    function mostrarModelos() {
+      const grid = document.getElementById('modelosGrid');
+      grid.innerHTML = '';
+
+      Object.entries(inventario).forEach(([modelo, data]) => {
+        const label = document.createElement('label');
+        label.className = 'modelo-card';
+        label.innerHTML = \`
+          <input type="radio" name="modelo" value="\${modelo}" required>
+          <div class="modelo-nombre">\${modelo}</div>
+          <div class="modelo-precio">$\${data.precio.toLocaleString()}</div>
+        \`;
+        grid.appendChild(label);
+      });
+
+      document.querySelectorAll('input[name="modelo"]').forEach(radio => {
+        radio.addEventListener('change', actualizarColores);
+      });
+    }
+
+    function actualizarColores() {
+      const modeloSeleccionado = document.querySelector('input[name="modelo"]:checked');
+      if (!modeloSeleccionado) return;
+
+      const modelo = modeloSeleccionado.value;
+      const data = inventario[modelo];
+      const grid = document.getElementById('coloresGrid');
+      grid.innerHTML = '';
+
+      document.getElementById('resumen-modelo').textContent = modelo;
+      document.getElementById('resumen-precio').textContent = \`$\${data.precio.toLocaleString()}\`;
+
+      Object.entries(data.colores).forEach(([color, stock]) => {
+        const label = document.createElement('label');
+        label.className = 'color-option' + (stock <= 0 ? ' sin-stock' : '');
+        
+        const colorHex = getColorHex(color);
+        const textColor = isLightColor(colorHex) ? '#000' : '#fff';
+
+        label.innerHTML = \`
+          <input type="radio" name="color" value="\${color}" \${stock <= 0 ? 'disabled' : ''} required>
+          <div class="color-swatch" style="background-color: \${colorHex}; color: \${textColor};">
+            \${color}
+            <div class="stock-info">
+              \${stock <= 0 ? '<div class="sin-stock-label">SIN STOCK</div>' : \`Stock: \${stock}\`}
+            </div>
+          </div>
+        \`;
+        grid.appendChild(label);
+      });
+
+      document.querySelectorAll('input[name="color"]').forEach(radio => {
+        radio.addEventListener('change', actualizarResumen);
+      });
+    }
+
+    function getColorHex(color) {
+      const colores = {
+        'Orange Mist': '#FF8C00',
+        'Military Green': '#556B2F',
+        'Space Grey': '#808080',
+        'Kanara Camo': '#654321',
+        'Jungle Green': '#2D5016',
+        'Ocean Blue': '#0066CC',
+        'Black': '#000000',
+        'Night Black': '#1a1a1a'
+      };
+      return colores[color] || '#CCCCCC';
+    }
+
+    function isLightColor(hex) {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return (r * 299 + g * 587 + b * 114) / 1000 > 128;
+    }
+
+    function actualizarResumen() {
+      const colorSeleccionado = document.querySelector('input[name="color"]:checked');
+      if (colorSeleccionado) {
+        document.getElementById('resumen-color').textContent = colorSeleccionado.value;
+        document.getElementById('resumen-total').textContent = document.getElementById('resumen-precio').textContent;
+      }
+    }
+
+    document.getElementById('cotizadorForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const datos = {
+        nombre: document.getElementById('nombre').value,
+        apellido: document.getElementById('apellido').value,
+        email: document.getElementById('email').value,
+        telefono: document.getElementById('telefono').value,
+        modelo: document.querySelector('input[name="modelo"]:checked').value,
+        color: document.querySelector('input[name="color"]:checked').value
+      };
+
+      try {
+        document.getElementById('btnCotizar').disabled = true;
+        const response = await fetch(\`\${API_URL}/api/cotizar\`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datos)
+        });
+
+        if (response.ok) {
+          document.getElementById('successMessage').classList.add('show');
+          setTimeout(() => {
+            document.getElementById('cotizadorForm').reset();
+            document.getElementById('successMessage').classList.remove('show');
+            document.getElementById('btnCotizar').disabled = false;
+            document.getElementById('coloresGrid').innerHTML = '';
+          }, 3000);
+        } else {
+          const error = await response.json();
+          alert('Error: ' + (error.error || 'Intenta de nuevo'));
+          document.getElementById('btnCotizar').disabled = false;
+        }
+      } catch (error) {
+        alert('Error conectando con el servidor');
+        document.getElementById('btnCotizar').disabled = false;
+      }
+    });
+
+    cargarInventario();
+  </script>
+</body>
+</html>`;
+
+// RUTAS
+
+// Servir HTML en raíz
+app.get('/', (req, res) => {
+  res.send(htmlCotizador);
+});
+
+// API: Obtener inventario
 app.get('/api/inventario', async (req, res) => {
   try {
     const inventario = await getInventario();
@@ -86,12 +601,10 @@ app.post('/api/cotizar', async (req, res) => {
   try {
     const { nombre, apellido, email, telefono, modelo, color } = req.body;
 
-    // Validar que tiene todos los datos
     if (!nombre || !apellido || !email || !modelo || !color) {
       return res.status(400).json({ error: 'Faltan datos requeridos' });
     }
 
-    // Obtener inventario actual
     const inventario = await getInventario();
     
     if (!inventario[modelo]) {
@@ -172,11 +685,6 @@ app.post('/api/cotizar', async (req, res) => {
     console.error('Error en cotización:', error);
     res.status(500).json({ error: error.message });
   }
-});
-
-// Health check
-app.get('/', (req, res) => {
-  res.send('✅ Servidor HISUN Cotizador Online');
 });
 
 app.listen(PORT, () => {
