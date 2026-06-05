@@ -6,11 +6,48 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const SPREADSHEET_ID = '1tdkPp_e76PRCJU2R8BGSkndUU6CjKzP8eui5yi72ywk';
-const GOOGLE_API_KEY = 'AIzaSyDyWY3oy5pZq1XyXzpz0K0xZ0xZ0xZ0xZ0';
 
 app.use(express.json());
 app.use(cors());
+
+// Datos hardcodeados (sin necesidad de API key)
+const inventario = {
+  'Guardian 750L': {
+    precio: 7950,
+    colores: {
+      'Orange Mist': 3,
+      'Military Green': 2,
+      'Space Grey': 5
+    }
+  },
+  'Freelander 750 (1 fila)': {
+    precio: 12950,
+    colores: {
+      'Orange Mist': 2,
+      'Kanara Camo': 1
+    }
+  },
+  'Freelander 750 Crew': {
+    precio: 15950,
+    colores: {
+      'Orange Mist': 6,
+      'Jungle Green': 4,
+      'Ocean Blue': 3,
+      'Military Green': 2,
+      'Space Grey': 5,
+      'Black': 2
+    }
+  },
+  'Freelander EV Crew': {
+    precio: 23950,
+    colores: {
+      'Ocean Blue': 4,
+      'Military Green': 3,
+      'Space Grey': 2,
+      'Night Black': 1
+    }
+  }
+};
 
 // Configurar email
 const transporter = nodemailer.createTransport({
@@ -21,54 +58,6 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 });
-
-// Leer datos de Google Sheets
-async function getSheetData(sheetName) {
-  try {
-    const range = `'${sheetName}'!A:B`;
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}?key=${GOOGLE_API_KEY}`;
-    
-    const response = await fetch(url);
-    const data = await response.json();
-    return data.values || [];
-  } catch (error) {
-    console.error(`Error leyendo ${sheetName}:`, error);
-    return [];
-  }
-}
-
-// Obtener precios y colores
-async function getInventario() {
-  const modelos = [
-    'Guardian 750L',
-    'Freelander 750 (1 fila)',
-    'Freelander 750 Crew',
-    'Freelander EV Crew'
-  ];
-
-  const inventario = {};
-
-  for (const modelo of modelos) {
-    const datos = await getSheetData(modelo);
-    if (datos.length > 0) {
-      const precio = datos[0][1];
-      const colores = {};
-      
-      for (let i = 2; i < datos.length; i++) {
-        if (datos[i][0] && datos[i][1]) {
-          colores[datos[i][0]] = parseInt(datos[i][1]) || 0;
-        }
-      }
-
-      inventario[modelo] = {
-        precio: parseInt(precio) || 0,
-        colores: colores
-      };
-    }
-  }
-
-  return inventario;
-}
 
 // HTML COTIZADOR
 const htmlCotizador = `<!DOCTYPE html>
@@ -225,6 +214,7 @@ const htmlCotizador = `<!DOCTYPE html>
       border-radius: 8px;
       border: 3px solid #ddd;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       font-weight: 600;
@@ -248,7 +238,7 @@ const htmlCotizador = `<!DOCTYPE html>
     
     .stock-info {
       font-size: 0.65em;
-      margin-top: 5px;
+      margin-top: 3px;
       color: #666;
     }
     
@@ -338,12 +328,6 @@ const htmlCotizador = `<!DOCTYPE html>
       display: block;
     }
     
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: white;
-    }
-    
     @media (max-width: 768px) {
       .form-row {
         grid-template-columns: 1fr;
@@ -361,11 +345,7 @@ const htmlCotizador = `<!DOCTYPE html>
       <p>Completa el formulario y recibirás tu propuesta al instante</p>
     </div>
 
-    <div id="loadingMessage" class="loading">
-      Cargando modelos disponibles...
-    </div>
-
-    <form id="cotizadorForm" style="display: none;">
+    <form id="cotizadorForm">
       <div class="form-section">
         <h2 class="section-title">Tus Datos</h2>
         <div class="form-row">
@@ -434,21 +414,7 @@ const htmlCotizador = `<!DOCTYPE html>
   </div>
 
   <script>
-    let inventario = {};
-    const API_URL = window.location.origin;
-
-    async function cargarInventario() {
-      try {
-        const response = await fetch(\`\${API_URL}/api/inventario\`);
-        inventario = await response.json();
-        mostrarModelos();
-        document.getElementById('loadingMessage').style.display = 'none';
-        document.getElementById('cotizadorForm').style.display = 'block';
-      } catch (error) {
-        console.error('Error cargando inventario:', error);
-        document.getElementById('loadingMessage').innerHTML = 'Error cargando datos. Intenta más tarde.';
-      }
-    }
+    const inventario = ${JSON.stringify(inventario)};
 
     function mostrarModelos() {
       const grid = document.getElementById('modelosGrid');
@@ -494,7 +460,7 @@ const htmlCotizador = `<!DOCTYPE html>
           <div class="color-swatch" style="background-color: \${colorHex}; color: \${textColor};">
             \${color}
             <div class="stock-info">
-              \${stock <= 0 ? '<div class="sin-stock-label">SIN STOCK</div>' : \`Stock: \${stock}\`}
+              \${stock <= 0 ? '<div class="sin-stock-label">SIN STOCK</div>' : \`\${stock}\`}
             </div>
           </div>
         \`;
@@ -549,7 +515,7 @@ const htmlCotizador = `<!DOCTYPE html>
 
       try {
         document.getElementById('btnCotizar').disabled = true;
-        const response = await fetch(\`\${API_URL}/api/cotizar\`, {
+        const response = await fetch('/api/cotizar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(datos)
@@ -574,29 +540,21 @@ const htmlCotizador = `<!DOCTYPE html>
       }
     });
 
-    cargarInventario();
+    mostrarModelos();
   </script>
 </body>
 </html>`;
 
 // RUTAS
 
-// Servir HTML en raíz
 app.get('/', (req, res) => {
   res.send(htmlCotizador);
 });
 
-// API: Obtener inventario
-app.get('/api/inventario', async (req, res) => {
-  try {
-    const inventario = await getInventario();
-    res.json(inventario);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.get('/api/inventario', (req, res) => {
+  res.json(inventario);
 });
 
-// API: Cotizar
 app.post('/api/cotizar', async (req, res) => {
   try {
     const { nombre, apellido, email, telefono, modelo, color } = req.body;
@@ -605,8 +563,6 @@ app.post('/api/cotizar', async (req, res) => {
       return res.status(400).json({ error: 'Faltan datos requeridos' });
     }
 
-    const inventario = await getInventario();
-    
     if (!inventario[modelo]) {
       return res.status(400).json({ error: 'Modelo no válido' });
     }
@@ -656,17 +612,17 @@ app.post('/api/cotizar', async (req, res) => {
       from: process.env.EMAIL_USER,
       to: email,
       subject: `Tu Cotización HISUN - ${modelo}`,
-      html: `
+      html: \`
         <h2>¡Gracias por tu interés en HISUN!</h2>
-        <p>Hola ${nombre},</p>
-        <p>Te adjuntamos tu cotización para el modelo <strong>${modelo}</strong> en color <strong>${color}</strong>.</p>
-        <p><strong>Precio: $${precio.toLocaleString()}</strong></p>
+        <p>Hola \${nombre},</p>
+        <p>Te adjuntamos tu cotización para el modelo <strong>\${modelo}</strong> en color <strong>\${color}</strong>.</p>
+        <p><strong>Precio: $\${precio.toLocaleString()}</strong></p>
         <p>Si tienes preguntas, no dudes en contactarnos.</p>
         <p>¡Saludos!</p>
-      `,
+      \`,
       attachments: [
         {
-          filename: `cotizacion-${cotizacionId}.pdf`,
+          filename: \`cotizacion-\${cotizacionId}.pdf\`,
           content: Buffer.from(pdfData, 'binary'),
           contentType: 'application/pdf'
         }
@@ -688,6 +644,6 @@ app.post('/api/cotizar', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚙 SERVIDOR COTIZACIONES HISUN - Online`);
-  console.log(`Puerto: ${PORT}`);
+  console.log(\`🚙 SERVIDOR COTIZACIONES HISUN - Online\`);
+  console.log(\`Puerto: \${PORT}\`);
 });
