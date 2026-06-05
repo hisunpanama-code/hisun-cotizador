@@ -1,32 +1,25 @@
 {
-  "name": "hisun-cotizador-api",
-  "version": "1.0.0",
-  "description": "API para cotizaciones HISUN con integración HubSpot + Twilio WhatsApp",
-  "main": "backend-cotizador.js",
-  "type": "module",
+  "name": "hisun-cotizador",
+  "version": "2.0.0",
+  "description": "API de cotizaciones HISUN con Google Sheets",
+  "main": "backend-cotizador-simple.js",
   "scripts": {
-    "start": "node backend-cotizador.js",
-    "dev": "nodemon backend-cotizador.js"
+    "start": "node backend-cotizador-simple.js",
+    "dev": "node backend-cotizador-simple.js"
   },
   "keywords": [
     "hisun",
     "cotizador",
-    "hubspot",
-    "twilio",
-    "whatsapp"
+    "api"
   ],
-  "author": "Car Mulle Service",
-  "license": "MIT",
+  "author": "HISUN Panama",
+  "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "node-fetch": "^2.6.7",
-    "nodemailer": "^6.9.7",
-    "pdfkit": "^0.13.0",
-    "uuid": "^9.0.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
+    "dotenv": "^16.0.3",
+    "nodemailer": "^6.9.1",
+    "pdfkit": "^0.13.0"
   }
 }
+
