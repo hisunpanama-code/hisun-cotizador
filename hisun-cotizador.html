@@ -1,0 +1,600 @@
+<!-- HISUN Cotizador - Landing Page para WordPress -->
+<!-- Usar en bloque HTML personalizado en WordPress -->
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  .cotizador-container {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    min-height: 100vh;
+    padding: 40px 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .cotizador-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .cotizador-header {
+    text-align: center;
+    margin-bottom: 50px;
+    color: white;
+  }
+
+  .cotizador-header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+
+  .cotizador-header p {
+    font-size: 1.1em;
+    color: #aaa;
+  }
+
+  .form-section {
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+
+  .section-title {
+    font-size: 1.5em;
+    font-weight: 600;
+    margin-bottom: 25px;
+    color: #1a1a1a;
+    border-bottom: 3px solid #ff6b35;
+    padding-bottom: 10px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+    font-size: 0.95em;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 1em;
+    transition: border-color 0.3s;
+    font-family: inherit;
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="tel"]:focus,
+  select:focus {
+    outline: none;
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 3px rgba(255,107,53,0.1);
+  }
+
+  .modelos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+  }
+
+  .modelo-card {
+    position: relative;
+    cursor: pointer;
+    border: 3px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s;
+    background: #f9f9f9;
+  }
+
+  .modelo-card:hover {
+    border-color: #ff6b35;
+    box-shadow: 0 5px 20px rgba(255,107,53,0.2);
+  }
+
+  .modelo-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .modelo-card.selected {
+    border-color: #ff6b35;
+    background: rgba(255,107,53,0.05);
+  }
+
+  .modelo-card.selected .modelo-content {
+    color: #ff6b35;
+    font-weight: 700;
+  }
+
+  .modelo-icon {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+  }
+
+  .modelo-content {
+    font-weight: 600;
+    color: #333;
+    transition: color 0.3s;
+  }
+
+  .colores-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 12px;
+  }
+
+  .color-option {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .color-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+  }
+
+  .color-swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    border: 3px solid #ddd;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85em;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+
+  .color-option input[type="radio"]:checked ~ .color-swatch {
+    border-color: #333;
+    box-shadow: 0 0 0 3px rgba(255,107,53,0.3), inset 0 0 0 2px white;
+    transform: scale(1.05);
+  }
+
+  .resumen-cotizacion {
+    background: linear-gradient(135deg, #f5f5f5 0%, #efefef 100%);
+    border-radius: 10px;
+    padding: 25px;
+    margin-top: 30px;
+    border-left: 5px solid #ff6b35;
+  }
+
+  .resumen-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 0.95em;
+  }
+
+  .resumen-item label {
+    margin: 0;
+    font-weight: 500;
+    color: #666;
+  }
+
+  .resumen-item span {
+    font-weight: 600;
+    color: #333;
+  }
+
+  .resumen-total {
+    border-top: 2px solid #ddd;
+    padding-top: 15px;
+    margin-top: 15px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.3em;
+    font-weight: 700;
+    color: #ff6b35;
+  }
+
+  .button-group {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    justify-content: center;
+  }
+
+  button {
+    padding: 14px 40px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-cotizar {
+    background: linear-gradient(135deg, #ff6b35 0%, #ff5520 100%);
+    color: white;
+    flex: 1;
+    max-width: 300px;
+  }
+
+  .btn-cotizar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(255,107,53,0.4);
+  }
+
+  .btn-cotizar:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-limpiar {
+    background: #e0e0e0;
+    color: #333;
+    flex: 1;
+    max-width: 300px;
+  }
+
+  .btn-limpiar:hover {
+    background: #d0d0d0;
+  }
+
+  .campo-error {
+    border-color: #ff4757 !important;
+  }
+
+  .error-message {
+    color: #ff4757;
+    font-size: 0.85em;
+    margin-top: 5px;
+    display: none;
+  }
+
+  .error-message.show {
+    display: block;
+  }
+
+  .success-message {
+    background: #2ed573;
+    color: white;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 20px;
+    text-align: center;
+    display: none;
+  }
+
+  .success-message.show {
+    display: block;
+  }
+
+  .precio-modelo {
+    font-size: 0.85em;
+    color: #999;
+    margin-top: 5px;
+  }
+
+  @media (max-width: 768px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .cotizador-header h1 {
+      font-size: 1.8em;
+    }
+
+    .form-section {
+      padding: 20px;
+    }
+
+    .button-group {
+      flex-direction: column-reverse;
+    }
+  }
+</style>
+
+<div class="cotizador-container">
+  <div class="cotizador-wrapper">
+    <div class="cotizador-header">
+      <h1>🚙 Cotiza tu HISUN 2026</h1>
+      <p>Completa el formulario y recibirás tu propuesta al instante</p>
+    </div>
+
+    <form id="cotizadorForm" class="cotizador-form">
+      <!-- SECCIÓN 1: DATOS PERSONALES -->
+      <div class="form-section">
+        <h2 class="section-title">Tus Datos</h2>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nombre">Nombre *</label>
+            <input type="text" id="nombre" name="nombre" required>
+            <div class="error-message"></div>
+          </div>
+          
+          <div class="form-group">
+            <label for="apellido">Apellido *</label>
+            <input type="text" id="apellido" name="apellido" required>
+            <div class="error-message"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">Correo Electrónico *</label>
+            <input type="email" id="email" name="email" required>
+            <div class="error-message"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="telefono">Teléfono (para WhatsApp)</label>
+            <input type="tel" id="telefono" name="telefono" placeholder="+507 XXXX-XXXX">
+            <div class="error-message"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 2: MODELO -->
+      <div class="form-section">
+        <h2 class="section-title">Elige tu Modelo</h2>
+        
+        <div class="modelos-grid">
+          <label class="modelo-card" id="modelo-1">
+            <input type="radio" name="modelo" value="Freelander EV Crew" required>
+            <div class="modelo-icon">⚡</div>
+            <div class="modelo-content">Freelander EV<br>Crew</div>
+            <div class="precio-modelo">Eléctrico</div>
+          </label>
+
+          <label class="modelo-card" id="modelo-2">
+            <input type="radio" name="modelo" value="Guardian 750L" required>
+            <div class="modelo-icon">🛡️</div>
+            <div class="modelo-content">Guardian<br>750L</div>
+            <div class="precio-modelo">Utilitario</div>
+          </label>
+
+          <label class="modelo-card" id="modelo-3">
+            <input type="radio" name="modelo" value="Freelander 750 (1 fila)" required>
+            <div class="modelo-icon">🚙</div>
+            <div class="modelo-content">Freelander 750<br>(1 fila)</div>
+            <div class="precio-modelo">Compacto</div>
+          </label>
+
+          <label class="modelo-card" id="modelo-4">
+            <input type="radio" name="modelo" value="Freelander 750 Crew" required>
+            <div class="modelo-icon">👥</div>
+            <div class="modelo-content">Freelander 750<br>Crew</div>
+            <div class="precio-modelo">Familiar</div>
+          </label>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 3: COLOR -->
+      <div class="form-section">
+        <h2 class="section-title">Selecciona el Color</h2>
+        
+        <div class="colores-grid" id="coloresGrid">
+          <!-- Se genera dinámicamente con JS -->
+        </div>
+      </div>
+
+      <!-- SECCIÓN 4: RESUMEN -->
+      <div class="form-section">
+        <div class="resumen-cotizacion">
+          <h3 style="margin-bottom: 20px; color: #333;">Resumen de tu Cotización</h3>
+          
+          <div class="resumen-item">
+            <label>Modelo:</label>
+            <span id="resumen-modelo">-</span>
+          </div>
+
+          <div class="resumen-item">
+            <label>Color:</label>
+            <span id="resumen-color">-</span>
+          </div>
+
+          <div class="resumen-item">
+            <label>Precio Base:</label>
+            <span id="resumen-precio">$0.00</span>
+          </div>
+
+          <div class="resumen-total">
+            <span>Total:</span>
+            <span id="resumen-total">$0.00</span>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="reset" class="btn-limpiar">Limpiar</button>
+          <button type="submit" class="btn-cotizar" id="btnCotizar">Generar Propuesta</button>
+        </div>
+
+        <div class="success-message" id="successMessage">
+          ✓ Propuesta enviada. Revisa tu correo.
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const PRECIOS = {
+  'Freelander EV Crew': 32000,
+  'Guardian 750L': 18500,
+  'Freelander 750 (1 fila)': 15800,
+  'Freelander 750 Crew': 19200
+};
+
+const COLORES = {
+  'Rojo': '#ff0000',
+  'Blanco': '#f5f5f5',
+  'Negro': '#1a1a1a',
+  'Azul': '#0066cc',
+  'Gris': '#808080'
+};
+
+function inicializarColores() {
+  const grid = document.getElementById('coloresGrid');
+  grid.innerHTML = '';
+  
+  Object.entries(COLORES).forEach(([nombre, hex]) => {
+    const label = document.createElement('label');
+    label.className = 'color-option';
+    
+    label.innerHTML = `
+      <input type="radio" name="color" value="${nombre}" required>
+      <div class="color-swatch" style="background-color: ${hex}; border-color: ${nombre === 'Blanco' ? '#ccc' : hex}">
+        ${nombre}
+      </div>
+    `;
+    
+    grid.appendChild(label);
+  });
+}
+
+document.querySelectorAll('input[name="modelo"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    document.querySelectorAll('.modelo-card').forEach(card => {
+      card.classList.remove('selected');
+    });
+    this.parentElement.classList.add('selected');
+    
+    const modelo = this.value;
+    document.getElementById('resumen-modelo').textContent = modelo;
+    document.getElementById('resumen-precio').textContent = `$${PRECIOS[modelo].toLocaleString()}`;
+    actualizarTotal();
+  });
+});
+
+document.addEventListener('change', function(e) {
+  if (e.target.name === 'color') {
+    document.getElementById('resumen-color').textContent = e.target.value;
+    actualizarTotal();
+  }
+});
+
+function actualizarTotal() {
+  const modeloSeleccionado = document.querySelector('input[name="modelo"]:checked');
+  if (modeloSeleccionado) {
+    const precio = PRECIOS[modeloSeleccionado.value];
+    document.getElementById('resumen-total').textContent = `$${precio.toLocaleString()}`;
+  }
+}
+
+function validarFormulario() {
+  let valido = true;
+  const campos = {
+    'nombre': 'Nombre',
+    'apellido': 'Apellido',
+    'email': 'Correo'
+  };
+
+  Object.entries(campos).forEach(([id, label]) => {
+    const input = document.getElementById(id);
+    const errorDiv = input.parentElement.querySelector('.error-message');
+    
+    if (!input.value.trim()) {
+      input.classList.add('campo-error');
+      errorDiv.textContent = `${label} es requerido`;
+      errorDiv.classList.add('show');
+      valido = false;
+    } else {
+      input.classList.remove('campo-error');
+      errorDiv.classList.remove('show');
+    }
+  });
+
+  const email = document.getElementById('email');
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!regex.test(email.value)) {
+    email.classList.add('campo-error');
+    email.parentElement.querySelector('.error-message').textContent = 'Email inválido';
+    email.parentElement.querySelector('.error-message').classList.add('show');
+    valido = false;
+  }
+
+  if (!document.querySelector('input[name="modelo"]:checked')) {
+    alert('Selecciona un modelo');
+    valido = false;
+  }
+
+  if (!document.querySelector('input[name="color"]:checked')) {
+    alert('Selecciona un color');
+    valido = false;
+  }
+
+  return valido;
+}
+
+document.getElementById('cotizadorForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  if (!validarFormulario()) return;
+
+  const datos = {
+    nombre: document.getElementById('nombre').value,
+    apellido: document.getElementById('apellido').value,
+    email: document.getElementById('email').value,
+    telefono: document.getElementById('telefono').value,
+    modelo: document.querySelector('input[name="modelo"]:checked').value,
+    color: document.querySelector('input[name="color"]:checked').value
+  };
+
+  try {
+    const response = await fetch('http://localhost:3000/api/cotizar', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(datos)
+    });
+
+    if (response.ok) {
+      const resultado = await response.json();
+      console.log('✅ Cotización exitosa:', resultado);
+      
+      document.getElementById('successMessage').classList.add('show');
+      
+      setTimeout(() => {
+        document.getElementById('cotizadorForm').reset();
+        document.getElementById('successMessage').classList.remove('show');
+      }, 3000);
+    } else {
+      const error = await response.json();
+      alert('Error: ' + error.error);
+    }
+  } catch(error) {
+    console.error('Error:', error);
+    alert('Error conectando con el servidor');
+  }
+});
+
+inicializarColores();
+</script>
